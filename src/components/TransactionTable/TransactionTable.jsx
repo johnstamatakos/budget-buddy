@@ -1,0 +1,144 @@
+import { useState } from 'react';
+import { CATEGORIES } from '../../constants/categories.js';
+import { formatCurrency, formatDate } from '../../utils/formatters.js';
+import './TransactionTable.css';
+
+export default function TransactionTable({ transactions, onUpdate, onViewDashboard, onBack }) {
+  const [search, setSearch] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterType, setFilterType] = useState('All'); // All | Expenses | Deposits | Recurring
+
+  const expenses = transactions.filter((t) => !t.isDeposit);
+  const deposits = transactions.filter((t) => t.isDeposit);
+  const totalExpenses = expenses.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const totalDeposits = deposits.reduce((sum, t) => sum + t.amount, 0);
+
+  const filtered = transactions.filter((t) => {
+    if (search && !t.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterCategory !== 'All' && t.category !== filterCategory) return false;
+    if (filterType === 'Expenses' && t.isDeposit) return false;
+    if (filterType === 'Deposits' && !t.isDeposit) return false;
+    if (filterType === 'Recurring' && !t.isRecurring) return false;
+    return true;
+  });
+
+  return (
+    <div className="table-page">
+      <div className="table-topbar">
+        <div className="topbar-left">
+          <button className="btn-ghost" onClick={onBack}>← New Upload</button>
+          <h1>Transactions <span className="count-badge">{transactions.length}</span></h1>
+        </div>
+        <button className="btn-primary" onClick={onViewDashboard}>View Dashboard →</button>
+      </div>
+
+      <div className="summary-row">
+        <div className="summary-card expense">
+          <span className="summary-label">Total Expenses</span>
+          <span className="summary-amount">{formatCurrency(totalExpenses)}</span>
+        </div>
+        <div className="summary-card deposit">
+          <span className="summary-label">Total Deposits</span>
+          <span className="summary-amount">{formatCurrency(totalDeposits)}</span>
+        </div>
+        <div className="summary-card recurring">
+          <span className="summary-label">Recurring Charges</span>
+          <span className="summary-amount">
+            {transactions.filter((t) => t.isRecurring && !t.isDeposit).length} found
+          </span>
+        </div>
+      </div>
+
+      <div className="filters-row">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search transactions..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className="filter-select"
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+        >
+          <option value="All">All categories</option>
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <select
+          className="filter-select"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="All">All types</option>
+          <option value="Expenses">Expenses only</option>
+          <option value="Deposits">Deposits only</option>
+          <option value="Recurring">Recurring only</option>
+        </select>
+      </div>
+
+      <div className="table-wrap">
+        <table className="tx-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Category</th>
+              <th>Recurring</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="empty-row">No transactions match your filters</td>
+              </tr>
+            ) : (
+              filtered.map((t) => (
+                <tr key={t.id} className={t.isDeposit ? 'row-deposit' : ''}>
+                  <td className="col-date">{formatDate(t.date)}</td>
+                  <td className="col-desc">
+                    {t.description}
+                    {t.isDeposit && <span className="deposit-badge">Deposit</span>}
+                  </td>
+                  <td className={`col-amount ${t.isDeposit ? 'positive' : 'negative'}`}>
+                    {t.isDeposit ? '+' : '-'}{formatCurrency(t.amount)}
+                  </td>
+                  <td className="col-category">
+                    {t.isDeposit ? (
+                      <span className="deposit-tag">Income/Deposit</span>
+                    ) : (
+                      <select
+                        value={t.category}
+                        onChange={(e) => onUpdate(t.id, { category: e.target.value })}
+                        className="category-select"
+                      >
+                        {CATEGORIES.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td className="col-recurring">
+                    {!t.isDeposit && (
+                      <label className="toggle">
+                        <input
+                          type="checkbox"
+                          checked={t.isRecurring}
+                          onChange={(e) => onUpdate(t.id, { isRecurring: e.target.checked })}
+                        />
+                        <span className="toggle-slider" />
+                      </label>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
