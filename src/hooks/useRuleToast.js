@@ -3,12 +3,12 @@ import { useState, useRef } from 'react';
 const DISMISS_MS = 5000;
 
 export function useRuleToast() {
-  const [pendingRule, setPendingRule] = useState(null); // { description, category }
+  const [pendingRule, setPendingRule] = useState(null); // { description, category, isRecurring }
   const timerRef = useRef(null);
 
-  const triggerToast = (description, category) => {
+  const triggerToast = (description, category, isRecurring = false) => {
     clearTimeout(timerRef.current);
-    setPendingRule({ description, category });
+    setPendingRule({ description, category, isRecurring });
     timerRef.current = setTimeout(() => setPendingRule(null), DISMISS_MS);
   };
 
@@ -19,7 +19,11 @@ export function useRuleToast() {
     await fetch('/api/rules', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ merchant: pendingRule.description, category: pendingRule.category }),
+      body: JSON.stringify({
+        merchant: pendingRule.description,
+        category: pendingRule.category,
+        isRecurring: pendingRule.isRecurring,
+      }),
     });
   };
 

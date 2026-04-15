@@ -20,13 +20,19 @@ export default function RulesPage() {
     setRules((prev) => { const next = { ...prev }; delete next[key]; return next; });
   };
 
+  // Normalize: old format stores strings, new format stores { category, isRecurring }
   const entries = Object.entries(rules)
-    .filter(([merchant, category]) =>
+    .map(([merchant, value]) => ({
+      merchant,
+      category: typeof value === 'string' ? value : value.category,
+      isRecurring: typeof value === 'string' ? false : Boolean(value.isRecurring),
+    }))
+    .filter(({ merchant, category }) =>
       !search.trim() ||
       merchant.toLowerCase().includes(search.toLowerCase()) ||
       category.toLowerCase().includes(search.toLowerCase())
     )
-    .sort(([a], [b]) => a.localeCompare(b));
+    .sort((a, b) => a.merchant.localeCompare(b.merchant));
 
   return (
     <div className="rules-page">
@@ -49,7 +55,7 @@ export default function RulesPage() {
       ) : entries.length === 0 ? (
         <div className="rules-empty">
           {Object.keys(rules).length === 0
-            ? 'No rules yet. Rules are created when you correct a category.'
+            ? 'No rules yet. Change a transaction category and confirm the toast to create one.'
             : 'No rules match your search.'}
         </div>
       ) : (
@@ -57,16 +63,20 @@ export default function RulesPage() {
           <table className="rules-table">
             <thead>
               <tr>
-                <th>Merchant</th>
+                <th>Merchant key</th>
                 <th>Category</th>
+                <th>Recurring</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {entries.map(([merchant, category]) => (
+              {entries.map(({ merchant, category, isRecurring }) => (
                 <tr key={merchant}>
                   <td className="rules-merchant">{merchant}</td>
                   <td className="rules-category">{category}</td>
+                  <td className="rules-recurring">
+                    {isRecurring && <span className="rules-recurring-badge">↻ recurring</span>}
+                  </td>
                   <td className="rules-actions">
                     <button
                       className="rules-delete-btn"

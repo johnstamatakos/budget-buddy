@@ -5,7 +5,9 @@ export default function RuleToast({ pendingRule, onSave, onDismiss }) {
   return (
     <div className="rule-toast">
       <span className="rule-toast-msg">
-        Save <strong>"{pendingRule.description}"</strong> → {pendingRule.category} as a rule?
+        Save <strong>"{pendingRule.description}"</strong> → {pendingRule.category}
+        {pendingRule.isRecurring && <span className="rule-toast-recurring"> · recurring</span>}
+        {' '}as a rule?
       </span>
       <div className="rule-toast-actions">
         <button className="rule-toast-save" onClick={onSave}>Save Rule</button>

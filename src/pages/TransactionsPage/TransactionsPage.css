@@ -103,6 +103,35 @@
   vertical-align: middle;
 }
 
+/* Flag column */
+.tx-col-flag {
+  width: 36px;
+  padding: 0 4px 0 8px !important;
+}
+
+.tx-flag-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.2;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: opacity 0.15s, background 0.15s;
+  line-height: 1;
+}
+.tx-flag-btn:hover  { opacity: 0.6; background: var(--surface-3); }
+.tx-flag-btn.active { opacity: 1; }
+
+.tx-row-flagged { background: rgba(251, 191, 36, 0.05) !important; }
+.tx-row-flagged:hover { background: rgba(251, 191, 36, 0.09) !important; }
+
+.tx-flag-count {
+  font-size: 12px;
+  color: var(--warning, #f59e0b);
+  font-weight: 600;
+}
+
 .tx-date {
   white-space: nowrap;
   color: var(--text-3);

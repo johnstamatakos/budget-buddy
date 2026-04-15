@@ -23,6 +23,7 @@ export default function TransactionsPage({
     minAmount = '',
     maxAmount = '',
     noRuleOnly = false,
+    flaggedOnly = false,
     sortBy = 'date',
     sortDir = 'desc',
   } = filters;
@@ -35,7 +36,8 @@ export default function TransactionsPage({
       ids.map((id) =>
         fetch(`/api/statements/${id}`)
           .then((r) => r.json())
-          .then((d) => d.transactions || [])
+          // Attach _statementId so we know where to persist changes
+          .then((d) => (d.transactions || []).map((t) => ({ ...t, _statementId: id })))
           .catch(() => [])
       )
     )
@@ -46,14 +48,15 @@ export default function TransactionsPage({
   const filtered = useMemo(() => {
     let list = txns;
 
-    if (typeFilter === 'expense')   list = list.filter((t) => !t.isDeposit);
-    else if (typeFilter === 'deposit')  list = list.filter((t) => t.isDeposit);
+    if (typeFilter === 'expense')    list = list.filter((t) => !t.isDeposit);
+    else if (typeFilter === 'deposit')   list = list.filter((t) => t.isDeposit);
     else if (typeFilter === 'recurring') list = list.filter((t) => t.isRecurring);
 
     if (categoryFilter) list = list.filter((t) => t.category === categoryFilter);
     if (minAmount !== '') list = list.filter((t) => Math.abs(t.amount) >= parseFloat(minAmount));
     if (maxAmount !== '') list = list.filter((t) => Math.abs(t.amount) <= parseFloat(maxAmount));
-    if (noRuleOnly) list = list.filter((t) => !t.ruleApplied && !t.isDeposit);
+    if (noRuleOnly)   list = list.filter((t) => !t.ruleApplied && !t.isDeposit);
+    if (flaggedOnly)  list = list.filter((t) => t.flagged);
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -67,18 +70,32 @@ export default function TransactionsPage({
 
     return [...list].sort((a, b) => {
       let cmp = 0;
-      if (sortBy === 'date')      cmp = (a.date || '').localeCompare(b.date || '');
-      else if (sortBy === 'amount')    cmp = Math.abs(a.amount) - Math.abs(b.amount);
-      else if (sortBy === 'category')  cmp = (a.category || '').localeCompare(b.category || '');
-      else if (sortBy === 'merchant')  cmp = (a.description || '').localeCompare(b.description || '');
+      if (sortBy === 'date')          cmp = (a.date || '').localeCompare(b.date || '');
+      else if (sortBy === 'amount')   cmp = Math.abs(a.amount) - Math.abs(b.amount);
+      else if (sortBy === 'category') cmp = (a.category || '').localeCompare(b.category || '');
+      else if (sortBy === 'merchant') cmp = (a.description || '').localeCompare(b.description || '');
       return sortDir === 'desc' ? -cmp : cmp;
     });
   }, [txns, filters, search]);
 
   const updateTxn = (txn, newCategory) => {
     setTxns((prev) => prev.map((t) => (t.id === txn.id ? { ...t, category: newCategory } : t)));
-    triggerToast(txn.description, newCategory);
+    triggerToast(txn.description, newCategory, txn.isRecurring);
   };
+
+  const toggleFlag = async (txn) => {
+    const newFlagged = !txn.flagged;
+    setTxns((prev) =>
+      prev.map((t) => (t.id === txn.id ? { ...t, flagged: newFlagged } : t))
+    );
+    await fetch(`/api/statements/${txn._statementId}/transactions/${txn.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flagged: newFlagged }),
+    });
+  };
+
+  const flaggedCount = txns.filter((t) => t.flagged).length;
 
   if (statements.length === 0) {
     return (
@@ -98,6 +115,9 @@ export default function TransactionsPage({
         <div className="tx-header-left">
           <h1>Transactions</h1>
           {!loading && <span className="tx-count">{filtered.length} shown</span>}
+          {!loading && flaggedCount > 0 && (
+            <span className="tx-flag-count">🚩 {flaggedCount} flagged</span>
+          )}
         </div>
         <input
           className="tx-search"
@@ -115,6 +135,7 @@ export default function TransactionsPage({
           <table className="tx-table">
             <thead>
               <tr>
+                <th className="tx-col-flag"></th>
                 <th>Date</th>
                 <th>Description</th>
                 <th>Category</th>
@@ -123,7 +144,23 @@ export default function TransactionsPage({
             </thead>
             <tbody>
               {filtered.map((t) => (
-                <tr key={t.id} className={t.isDeposit ? 'tx-row-deposit' : ''}>
+                <tr
+                  key={t.id}
+                  className={[
+                    t.isDeposit ? 'tx-row-deposit' : '',
+                    t.flagged ? 'tx-row-flagged' : '',
+                  ].filter(Boolean).join(' ')}
+                >
+                  <td className="tx-col-flag">
+                    <button
+                      className={`tx-flag-btn${t.flagged ? ' active' : ''}`}
+                      onClick={() => toggleFlag(t)}
+                      title={t.flagged ? 'Remove flag' : 'Flag for review'}
+                      aria-label={t.flagged ? 'Remove flag' : 'Flag for review'}
+                    >
+                      🚩
+                    </button>
+                  </td>
                   <td className="tx-date">{formatDate(t.date)}</td>
                   <td className="tx-desc">
                     <span className="tx-source">{t.description}</span>
@@ -148,7 +185,7 @@ export default function TransactionsPage({
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="tx-none">No transactions match</td>
+                  <td colSpan={5} className="tx-none">No transactions match</td>
                 </tr>
               )}
             </tbody>

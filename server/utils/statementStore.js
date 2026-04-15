@@ -95,6 +95,26 @@ export async function updateStatement(id, { name, monthlyIncome, transactions })
   return updated;
 }
 
+/**
+ * Patch individual fields on a single transaction (e.g. flagged).
+ * Does NOT recalculate statement summary — suitable for non-financial fields.
+ */
+export async function patchTransaction(stmtId, txId, patch) {
+  validateId(stmtId);
+  await ensureDataDir();
+  const path = join(DATA_DIR, `${stmtId}.json`);
+  if (!existsSync(path)) return null;
+  const stmt = JSON.parse(await readFile(path, 'utf8'));
+  let updated = null;
+  const transactions = stmt.transactions.map((t) => {
+    if (t.id === txId) { updated = { ...t, ...patch }; return updated; }
+    return t;
+  });
+  if (!updated) return null;
+  await writeFile(path, JSON.stringify({ ...stmt, transactions }, null, 2));
+  return updated;
+}
+
 export async function deleteStatement(id) {
   validateId(id);
   await ensureDataDir();

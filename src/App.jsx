@@ -29,7 +29,7 @@ export default function App() {
   // ── Transaction filters ───────────────────────────────────────────────────
   const [txFilters, setTxFilters] = useState({
     type: '', category: '', minAmount: '', maxAmount: '',
-    noRuleOnly: false, sortBy: 'date', sortDir: 'desc',
+    noRuleOnly: false, flaggedOnly: false, sortBy: 'date', sortDir: 'desc',
   });
   const setTxFilter = (key, value) => setTxFilters((f) => ({ ...f, [key]: value }));
 
@@ -244,6 +244,14 @@ export default function App() {
       </SidebarSection>
 
       <SidebarSection label="Options">
+        <label className="sidebar-checkbox">
+          <input
+            type="checkbox"
+            checked={txFilters.flaggedOnly}
+            onChange={(e) => setTxFilter('flaggedOnly', e.target.checked)}
+          />
+          <span>🚩 Flagged only</span>
+        </label>
         <label className="sidebar-checkbox">
           <input
             type="checkbox"

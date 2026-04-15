@@ -12,6 +12,7 @@ import {
   getStatement,
   updateStatement,
   deleteStatement,
+  patchTransaction,
   getAllFingerprints,
 } from './utils/statementStore.js';
 import { applyRules, getRules, setRule, deleteRule } from './utils/rulesStore.js';
@@ -119,6 +120,26 @@ app.put('/api/statements/:id', async (req, res) => {
   }
 });
 
+// Patch a single transaction (e.g. toggle flagged)
+app.patch('/api/statements/:stmtId/transactions/:txId', async (req, res) => {
+  try {
+    const { stmtId, txId } = req.params;
+    const { flagged } = req.body;
+    const patch = {};
+    if (typeof flagged === 'boolean') patch.flagged = flagged;
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: 'No patchable fields provided.' });
+    }
+    const tx = await patchTransaction(stmtId, txId, patch);
+    if (!tx) return res.status(404).json({ error: 'Statement or transaction not found.' });
+    return res.json(tx);
+  } catch (err) {
+    if (err.message === 'Invalid statement id.') return res.status(400).json({ error: err.message });
+    console.error('Error in PATCH /api/statements/:stmtId/transactions/:txId:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Delete a statement
 app.delete('/api/statements/:id', async (req, res) => {
   try {
@@ -172,9 +193,9 @@ app.get('/api/rules', async (_req, res) => {
 
 app.post('/api/rules', async (req, res) => {
   try {
-    const { merchant, category } = req.body;
+    const { merchant, category, isRecurring } = req.body;
     if (!merchant || !category) return res.status(400).json({ error: 'merchant and category required.' });
-    await setRule(merchant, category);
+    await setRule(merchant, category, isRecurring);
     return res.json({ ok: true });
   } catch (err) {
     console.error('Error in POST /api/rules:', err.message);
