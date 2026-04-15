@@ -15,6 +15,7 @@ function formatTs(iso) {
 }
 
 export default function InsightsCard({ statements }) {
+  const [open, setOpen] = useState(false);
   const [state, setState] = useState('idle'); // idle | loading | done | error
   const [insights, setInsights] = useState([]);
   const [generatedAt, setGeneratedAt] = useState(null);
@@ -23,12 +24,13 @@ export default function InsightsCard({ statements }) {
 
   const stmtKey = statements.map((s) => s.id).sort().join(',');
 
+  // Only fetch when the card is first opened, or statements change while open
   useEffect(() => {
-    if (statements.length === 0) return;
+    if (!open || statements.length === 0) return;
     if (stmtKey === prevKeyRef.current && state === 'done') return;
     prevKeyRef.current = stmtKey;
     fetchInsights(false);
-  }, [stmtKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, stmtKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchInsights(force) {
     setState('loading');
@@ -53,57 +55,78 @@ export default function InsightsCard({ statements }) {
   if (statements.length === 0) return null;
 
   return (
-    <div className="insights-card">
-      <div className="insights-header">
+    <div className={`insights-card${open ? ' open' : ''}`}>
+      {/* Clickable header — toggles open/closed */}
+      <button
+        className="insights-header"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
         <span className="insights-title">
           <span className="insights-spark">✦</span>
           AI Insights
         </span>
         <div className="insights-header-right">
-          {generatedAt && state === 'done' && (
+          {open && generatedAt && state === 'done' && (
             <span className="insights-ts">Updated {formatTs(generatedAt)}</span>
           )}
-          <button
-            className="insights-refresh"
-            onClick={() => fetchInsights(true)}
-            disabled={state === 'loading'}
-            title="Regenerate insights"
-          >
-            {state === 'loading' ? '…' : '↺'}
-          </button>
+          {open && (
+            <span
+              className="insights-refresh"
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); fetchInsights(true); }}
+              onKeyDown={(e) => e.key === 'Enter' && (e.stopPropagation(), fetchInsights(true))}
+              title="Regenerate insights"
+              aria-disabled={state === 'loading'}
+            >
+              {state === 'loading' ? '…' : '↺'}
+            </span>
+          )}
+          <span className={`insights-chevron${open ? ' open' : ''}`}>▾</span>
         </div>
-      </div>
+      </button>
 
-      <div className="insights-body">
-        {state === 'loading' && (
-          <div className="insights-skeleton">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="insights-skel-row">
-                <div className="insights-skel-icon" />
-                <div className="insights-skel-line" style={{ width: `${60 + i * 7}%` }} />
-              </div>
-            ))}
-          </div>
-        )}
+      {open && (
+        <div className="insights-body">
+          {state === 'idle' && (
+            <div className="insights-idle">
+              <button className="insights-generate-btn" onClick={() => fetchInsights(false)}>
+                Generate Insights
+              </button>
+            </div>
+          )}
 
-        {state === 'error' && (
-          <div className="insights-error">
-            <span>Could not generate insights — {errorMsg}</span>
-            <button className="insights-retry" onClick={() => fetchInsights(false)}>Retry</button>
-          </div>
-        )}
+          {state === 'loading' && (
+            <div className="insights-skeleton">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="insights-skel-row">
+                  <div className="insights-skel-icon" />
+                  <div className="insights-skel-line" style={{ width: `${60 + i * 7}%` }} />
+                </div>
+              ))}
+            </div>
+          )}
 
-        {state === 'done' && insights.length > 0 && (
-          <ul className="insights-list">
-            {insights.map((insight, i) => (
-              <li key={i} className={`insights-item insights-item-${insight.type}`}>
-                <span className="insights-icon">{TYPE_ICON[insight.type] ?? '→'}</span>
-                <span className="insights-msg">{insight.message}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          {state === 'error' && (
+            <div className="insights-error">
+              <span>Could not generate insights — {errorMsg}</span>
+              <button className="insights-retry" onClick={() => fetchInsights(false)}>Retry</button>
+            </div>
+          )}
+
+          {state === 'done' && insights.length > 0 && (
+            <ul className="insights-list">
+              {insights.map((insight, i) => (
+                <li key={i} className={`insights-item insights-item-${insight.type}`}>
+                  <span className="insights-icon">{TYPE_ICON[insight.type] ?? '→'}</span>
+                  <span className="insights-msg">{insight.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

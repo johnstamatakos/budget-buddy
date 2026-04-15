@@ -16,6 +16,7 @@ import {
   getAllFingerprints,
 } from './utils/statementStore.js';
 import { applyRules, getRules, setRule, deleteRule } from './utils/rulesStore.js';
+import { refineRules } from './ai/rulesRefiner.js';
 import { generateInsights } from './ai/insightsAnalyzer.js';
 import { getCachedInsights, setCachedInsights, clearInsightsCache } from './utils/insightsCache.js';
 
@@ -180,6 +181,18 @@ app.post('/api/insights', async (req, res) => {
 });
 
 // ── Rules CRUD ────────────────────────────────────────────────────────────────
+
+// Refine rules with AI (must come before /:key routes)
+app.post('/api/rules/refine', async (_req, res) => {
+  try {
+    const rules = await getRules();
+    const result = await refineRules(rules);
+    return res.json(result);
+  } catch (err) {
+    console.error('Error in POST /api/rules/refine:', err.message);
+    return res.status(500).json({ error: err.message || 'Failed to refine rules.' });
+  }
+});
 
 app.get('/api/rules', async (_req, res) => {
   try {

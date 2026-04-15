@@ -3,11 +3,17 @@ import { anthropic } from './claudeClient.js';
 const SYSTEM_PROMPT = `You are a personal finance analyst. Given monthly bank statement summaries, generate 4–6 short, specific, data-driven insights.
 
 Each insight is a JSON object: { "type": "warning"|"positive"|"info", "message": "..." }
-- "warning": high spend, rising category, spending > income
+- "warning": high spend, rising category, spending > income/deposits
 - "positive": spending down, good savings rate, improvement vs prior month
 - "info": neutral observation, pattern, breakdown
 
+Key field definitions:
+- "totalDeposits": sum of all incoming transfers and paychecks recorded in the statement (this is the actual income)
+- "totalExpenses": sum of all outgoing charges
+- "byCategory": spending breakdown by category
+
 Rules:
+- Use totalDeposits as the income figure — do NOT say income is $0 if totalDeposits > 0
 - Reference actual dollar amounts and category names
 - For multiple months, compare month-over-month or to the average
 - Each message must be under 90 characters
@@ -24,7 +30,7 @@ Example output:
 export async function generateInsights(statements) {
   const data = statements.map((s) => ({
     period: s.period?.label ?? s.name,
-    income: s.monthlyIncome || 0,
+    totalDeposits: s.summary?.totalDeposits ?? 0,   // actual bank income/deposits
     totalExpenses: s.summary?.totalExpenses ?? 0,
     byCategory: s.summary?.byCategory ?? {},
     transactionCount: s.summary?.transactionCount ?? 0,
@@ -42,7 +48,7 @@ export async function generateInsights(statements) {
     if (block.type === 'text') { text = block.text; break; }
   }
 
-  // Strip markdown fences if Haiku wraps anyway
+  // Strip markdown fences if model wraps anyway
   const json = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
   return JSON.parse(json);
 }
