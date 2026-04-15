@@ -26,6 +26,13 @@ export default function App() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [reviewData, setReviewData] = useState(null); // { transactions, defaultName }
 
+  // ── Transaction filters ───────────────────────────────────────────────────
+  const [txFilters, setTxFilters] = useState({
+    type: '', category: '', minAmount: '', maxAmount: '',
+    noRuleOnly: false, sortBy: 'date', sortDir: 'desc',
+  });
+  const setTxFilter = (key, value) => setTxFilters((f) => ({ ...f, [key]: value }));
+
   // ── Budget goal (persisted in localStorage) ──────────────────────────────
   const [budgetGoal, setBudgetGoalState] = useState(() => {
     const stored = localStorage.getItem('finch_budget_goal');
@@ -173,6 +180,79 @@ export default function App() {
   const txSidebar = (
     <div>
       <SidebarSection label="Period">{periodButtons}</SidebarSection>
+
+      <SidebarSection label="Type">
+        {[['', 'All'], ['expense', 'Expenses'], ['deposit', 'Deposits'], ['recurring', 'Recurring']].map(([key, label]) => (
+          <button
+            key={key}
+            className={`sidebar-period-btn${txFilters.type === key ? ' active' : ''}`}
+            onClick={() => setTxFilter('type', key)}
+          >
+            {label}
+          </button>
+        ))}
+      </SidebarSection>
+
+      <SidebarSection label="Category">
+        <select
+          className="sidebar-filter-select"
+          value={txFilters.category}
+          onChange={(e) => setTxFilter('category', e.target.value)}
+        >
+          <option value="">All categories</option>
+          {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </SidebarSection>
+
+      <SidebarSection label="Amount">
+        <div className="sidebar-amount-range">
+          <input
+            className="sidebar-amount-input"
+            type="number" placeholder="Min" min="0"
+            value={txFilters.minAmount}
+            onChange={(e) => setTxFilter('minAmount', e.target.value)}
+          />
+          <span className="sidebar-amount-sep">–</span>
+          <input
+            className="sidebar-amount-input"
+            type="number" placeholder="Max" min="0"
+            value={txFilters.maxAmount}
+            onChange={(e) => setTxFilter('maxAmount', e.target.value)}
+          />
+        </div>
+      </SidebarSection>
+
+      <SidebarSection label="Sort">
+        <div className="sidebar-sort-row">
+          <select
+            className="sidebar-filter-select"
+            value={txFilters.sortBy}
+            onChange={(e) => setTxFilter('sortBy', e.target.value)}
+          >
+            {[['date','Date'],['amount','Amount'],['category','Category'],['merchant','Merchant']].map(([k, l]) => (
+              <option key={k} value={k}>{l}</option>
+            ))}
+          </select>
+          <button
+            className="sidebar-sort-dir"
+            title={txFilters.sortDir === 'desc' ? 'Descending' : 'Ascending'}
+            onClick={() => setTxFilter('sortDir', txFilters.sortDir === 'desc' ? 'asc' : 'desc')}
+          >
+            {txFilters.sortDir === 'desc' ? '↓' : '↑'}
+          </button>
+        </div>
+      </SidebarSection>
+
+      <SidebarSection label="Options">
+        <label className="sidebar-checkbox">
+          <input
+            type="checkbox"
+            checked={txFilters.noRuleOnly}
+            onChange={(e) => setTxFilter('noRuleOnly', e.target.checked)}
+          />
+          <span>Unmatched only</span>
+        </label>
+      </SidebarSection>
     </div>
   );
 
@@ -206,6 +286,7 @@ export default function App() {
             selectedId={selectedId}
             allCategories={allCategories}
             onCreateCategory={addCategory}
+            filters={txFilters}
           />
         )}
 

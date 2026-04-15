@@ -2,7 +2,8 @@
 .shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -95,23 +96,26 @@
   display: flex;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
-/* Sidebar */
+/* Sidebar — independently scrollable, never moves with main content */
 .shell-sidebar {
-  width: 220px;
+  width: 250px;
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 20px 0;
   overflow-y: auto;
+  height: 100%;
 }
 
-/* Main content */
+/* Main content — independently scrollable */
 .shell-main {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
+  height: 100%;
 }
 
 /* ── Sidebar content helpers ──────────────────────────────────── */
@@ -215,6 +219,75 @@
 }
 .sidebar-budget-input::placeholder { color: var(--text-3); }
 
+/* ── Sidebar filter controls ──────────────────────────────────── */
+.sidebar-filter-select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-1);
+  background: var(--surface-2);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.sidebar-filter-select:focus { border-color: var(--accent); }
+
+.sidebar-amount-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sidebar-amount-input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-1);
+  background: var(--surface-2);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.sidebar-amount-input:focus { border-color: var(--accent); }
+.sidebar-amount-input::placeholder { color: var(--text-3); }
+.sidebar-amount-sep { color: var(--text-3); font-size: 12px; flex-shrink: 0; }
+
+.sidebar-sort-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.sidebar-sort-row .sidebar-filter-select { flex: 1; }
+.sidebar-sort-dir {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+  line-height: 1;
+}
+.sidebar-sort-dir:hover { color: var(--text-1); border-color: var(--text-2); }
+
+.sidebar-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 6px;
+}
+.sidebar-checkbox input { cursor: pointer; accent-color: var(--accent); }
+.sidebar-checkbox:hover { color: var(--text-1); }
+
 /* ── Bottom nav (mobile only) ─────────────────────────────────── */
 .shell-bottom-nav {
   display: none; /* shown via media query */
@@ -229,7 +302,7 @@
   .shell-header { padding: 0 20px; }
   .shell-logo { margin-right: 20px; }
   .shell-logo-img { height: 64px; }
-  .shell-sidebar { width: 190px; }
+  .shell-sidebar { width: 220px; }
 }
 
 /* ── Mobile (≤767px): bottom nav, stacked sidebar ─────────────── */
