@@ -13,9 +13,11 @@ import './DashboardPage.css';
 // Match stat card colors
 const COLOR_EXPENSES  = '#f87171'; // var(--negative)
 const COLOR_INCOME    = '#34d399'; // var(--positive)
-const COLOR_ACCENT    = '#818cf8'; // var(--accent)
-const COLOR_RECURRING = '#818cf8';
-const COLOR_ONETIME   = '#475569';
+const COLOR_ACCENT    = '#818cf8'; // var(--accent) — used for general/monthly charts
+const COLOR_MERCHANTS = '#2dd4bf'; // teal — top merchants
+const COLOR_RECURRING = '#38bdf8'; // sky blue — recurring fixed costs
+const COLOR_ONETIME   = '#64748b'; // slate — one-time discretionary
+const COLOR_DAILY     = '#fb923c'; // orange — daily spend
 
 const TOOLTIP_STYLE = {
   borderRadius: '10px',
@@ -25,9 +27,23 @@ const TOOLTIP_STYLE = {
   color: '#f1f5f9',
 };
 
-const AXIS_TICK  = { fontSize: 11, fill: '#4b5675' };
+const AXIS_TICK  = { fontSize: 11, fill: '#8898aa' };
 const AXIS_LINE  = { stroke: '#2d3a52' };
 const GRID_STYLE = { strokeDasharray: '3 3', stroke: '#1e2a3f' };
+
+function MerchantTick({ x, y, payload }) {
+  if (!payload?.value) return null;
+  const full  = payload.value;
+  const label = full.length > 20 ? full.slice(0, 20) + '…' : full;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <title>{full}</title>
+      <text x={0} y={0} dy={4} textAnchor="end" fill="#8898aa" fontSize={11}>
+        {label}
+      </text>
+    </g>
+  );
+}
 
 export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }) {
   const selected = selectedId ? statements.find((s) => s.id === selectedId) : null;
@@ -406,18 +422,18 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
                   <YAxis
                     type="category"
                     dataKey="name"
-                    tick={AXIS_TICK}
+                    tick={(props) => <MerchantTick {...props} />}
+                    interval={0}
                     axisLine={false}
                     tickLine={false}
                     width={130}
-                    tickFormatter={(v) => v.length > 20 ? v.slice(0, 20) + '…' : v}
                   />
                   <Tooltip
                     formatter={(v) => [formatCurrency(v), 'Spent']}
                     contentStyle={TOOLTIP_STYLE}
                     cursor={{ fill: 'rgba(129,140,248,0.06)' }}
                   />
-                  <Bar dataKey="value" fill={COLOR_ACCENT} radius={[0, 4, 4, 0]} label={{ position: 'right', formatter: (v) => formatCurrency(v), fontSize: 11, fill: '#4b5675' }} />
+                  <Bar dataKey="value" fill={COLOR_MERCHANTS} radius={[0, 4, 4, 0]} label={{ position: 'right', formatter: (v) => formatCurrency(v), fontSize: 11, fill: '#8898aa' }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -442,10 +458,6 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
                       <Cell fill={COLOR_RECURRING} />
                       <Cell fill={COLOR_ONETIME} />
                     </Pie>
-                    <Tooltip
-                      formatter={(v, name) => [formatCurrency(v), name]}
-                      contentStyle={TOOLTIP_STYLE}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="dash-donut-center">
@@ -453,8 +465,12 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
                   <span className="dash-donut-label">recurring</span>
                 </div>
                 <div className="dash-legend" style={{ marginTop: 4 }}>
-                  <span><span className="dash-legend-dot" style={{ background: COLOR_RECURRING }} /> Recurring</span>
-                  <span><span className="dash-legend-dot" style={{ background: COLOR_ONETIME }} /> One-time</span>
+                  {recurringData.map((d) => (
+                    <span key={d.name}>
+                      <span className="dash-legend-dot" style={{ background: d.name === 'Recurring' ? COLOR_RECURRING : COLOR_ONETIME }} />
+                      {d.name} — {formatCurrency(d.value)}
+                    </span>
+                  ))}
                 </div>
               </div>
             ) : (
@@ -494,7 +510,7 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
                   contentStyle={TOOLTIP_STYLE}
                   cursor={{ fill: 'rgba(129,140,248,0.06)' }}
                 />
-                <Bar dataKey="amount" fill={COLOR_ACCENT} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="amount" fill={COLOR_DAILY} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
