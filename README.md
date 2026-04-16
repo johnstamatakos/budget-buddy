@@ -1,6 +1,11 @@
+<img width="1024" height="559" alt="logo" src="https://github.com/user-attachments/assets/46c9e1e7-3f2e-4ada-94ab-e35fcb008a63" />
+
 # Finch
 
 A personal finance dashboard that connects to your bank via Plaid, categorizes transactions with AI, and gives you a clear picture of where your money goes.
+
+<img width="2553" height="1281" alt="image" src="https://github.com/user-attachments/assets/d5c82f60-17cd-4fd2-a65e-0ff623af16c4" />
+
 
 ## What it does
 
