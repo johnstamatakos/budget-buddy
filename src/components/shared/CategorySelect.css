@@ -176,6 +176,13 @@
 .cat-create-btn:hover { background: var(--accent-dim); }
 .cat-create-btn strong { font-weight: 600; }
 
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .cat-drop { max-height: 60vh; min-width: 200px; }
+  .cat-opt  { padding: 12px 14px; } /* larger touch targets */
+  .cat-create-btn { padding: 12px 10px; }
+}
+
 .cat-create-plus {
   width: 20px;
   height: 20px;

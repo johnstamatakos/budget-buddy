@@ -61,3 +61,8 @@ button, input, select, textarea {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--surface-3); }
+
+/* Prevent iOS auto-zoom on input focus (requires font-size ≥ 16px) */
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+}

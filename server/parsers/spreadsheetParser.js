@@ -96,8 +96,6 @@ export function parseSpreadsheet(buffer) {
   }
 
   const headers = Object.keys(allRows[0]);
-  console.log('[spreadsheet] headers:', headers);
-  console.log('[spreadsheet] sample row:', allRows[0]);
 
   // Detect columns by matching header names against keyword lists
   let dateCol = null, sourceCol = null, activityCol = null;
@@ -111,8 +109,6 @@ export function parseSpreadsheet(buffer) {
     if (!debitCol    && matches(h, DEBIT_KEYS))    { debitCol    = h; continue; }
     if (!creditCol   && matches(h, CREDIT_KEYS))   { creditCol   = h; continue; }
   }
-
-  console.log('[spreadsheet] detected →', { dateCol, sourceCol, activityCol, amountCol, debitCol, creditCol });
 
   // Fallback: pick the longest-text column as source
   if (!sourceCol) {
@@ -128,7 +124,6 @@ export function parseSpreadsheet(buffer) {
         return lenB - lenA;
       });
     sourceCol = best[0] || headers[1];
-    console.log('[spreadsheet] sourceCol fallback →', sourceCol);
   }
 
   const transactions = [];

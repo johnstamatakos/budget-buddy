@@ -13,6 +13,7 @@ export default function AppShell({ page, onPageChange, onUpload, onSync, syncing
       <header className="shell-header">
         <div className="shell-logo">
           <img src="/logo.png" alt="Finch" className="shell-logo-img" />
+          <span className="shell-tagline">Your finances, in focus.</span>
         </div>
 
         <nav className="shell-nav" aria-label="Main navigation">
@@ -34,7 +35,10 @@ export default function AppShell({ page, onPageChange, onUpload, onSync, syncing
             disabled={syncing}
             title={isConnected ? 'Sync new transactions from bank' : 'Connect your bank account'}
           >
-            {syncing ? 'Syncing…' : isConnected ? '⟳ Sync' : '⟳ Connect Bank'}
+            <span aria-hidden>⟳</span>
+            <span className="shell-sync-label">
+              {' '}{syncing ? 'Syncing…' : isConnected ? 'Sync' : 'Connect Bank'}
+            </span>
           </button>
           <button className="shell-upload-btn" onClick={onUpload}>
             + Upload

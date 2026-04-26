@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
   LineChart, Line,
   AreaChart, Area,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import { CATEGORIES, CATEGORY_COLORS } from '../../constants/categories.js';
 import { formatCurrency } from '../../utils/formatters.js';
@@ -203,6 +203,15 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
       return next;
     });
 
+  const [hiddenPieCats, setHiddenPieCats] = useState(new Set());
+  const togglePieCat = (cat) =>
+    setHiddenPieCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  const visiblePieData = categoryData.filter((d) => !hiddenPieCats.has(d.name));
+
   if (statements.length === 0) {
     return (
       <div className="dash-page">
@@ -348,29 +357,41 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
         <div className="dash-card">
           <h2>Spending by Category</h2>
           {categoryData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%" cy="50%"
-                  innerRadius={65} outerRadius={100}
-                  paddingAngle={3} dataKey="value"
-                >
-                  {categoryData.map((entry) => (
-                    <Cell key={entry.name} fill={CATEGORY_COLORS[entry.name] || '#94a3b8'} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(v, name) => [formatCurrency(v), name]}
-                  contentStyle={TOOLTIP_STYLE}
-                />
-                <Legend
-                  iconType="circle"
-                  iconSize={9}
-                  formatter={(v) => <span style={{ fontSize: 12, color: '#8898aa' }}>{v}</span>}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    key={visiblePieData.map((d) => d.name).join(',')}
+                    data={visiblePieData}
+                    cx="50%" cy="50%"
+                    innerRadius={60} outerRadius={95}
+                    paddingAngle={3} dataKey="value"
+                    animationBegin={0} animationDuration={450}
+                  >
+                    {visiblePieData.map((entry) => (
+                      <Cell key={entry.name} fill={CATEGORY_COLORS[entry.name] || '#94a3b8'} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v, name) => [formatCurrency(v), name]}
+                    contentStyle={TOOLTIP_STYLE}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="dash-legend dash-legend-wrap">
+                {categoryData.map((item) => (
+                  <span
+                    key={item.name}
+                    className={`dash-legend-item${hiddenPieCats.has(item.name) ? ' hidden' : ''}`}
+                    onClick={() => togglePieCat(item.name)}
+                    title={hiddenPieCats.has(item.name) ? 'Show' : 'Hide'}
+                  >
+                    <span className="dash-legend-dot" style={{ background: CATEGORY_COLORS[item.name] || '#94a3b8' }} />
+                    {item.name}
+                  </span>
+                ))}
+              </div>
+            </>
           ) : (
             <p className="dash-empty-chart">No expense data</p>
           )}

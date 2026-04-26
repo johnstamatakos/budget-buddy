@@ -24,15 +24,25 @@
 /* Logo */
 .shell-logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
   margin-right: 36px;
   flex-shrink: 0;
 }
 
 .shell-logo-img {
-  height: 80px;
+  height: 50px;
   width: auto;
   display: block;
+}
+
+.shell-tagline {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  margin-top: 1px;
 }
 
 /* Nav tabs */
@@ -337,7 +347,7 @@
 @media (max-width: 1024px) {
   .shell-header { padding: 0 20px; }
   .shell-logo { margin-right: 20px; }
-  .shell-logo-img { height: 64px; }
+  .shell-logo-img { height: 50px; }
   .shell-sidebar { width: 220px; }
 }
 
@@ -349,10 +359,15 @@
     min-height: 60px;
   }
   .shell-logo { margin-right: auto; }
-  .shell-logo-img { height: 52px; }
+  .shell-logo-img { height: 40px; }
+  .shell-tagline { display: none; }
 
   /* Hide top-nav tabs on mobile */
   .shell-nav { display: none; }
+
+  /* Sync button: icon only on mobile */
+  .shell-sync-label { display: none; }
+  .shell-sync-btn { padding: 8px 10px; }
 
   /* Upload button stays, but smaller */
   .shell-upload-btn {
@@ -363,18 +378,24 @@
   /* Body stacks vertically */
   .shell-body {
     flex-direction: column;
-    padding-bottom: 64px; /* room for bottom nav */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0));
   }
 
   /* Sidebar becomes a horizontal scroll strip */
   .shell-sidebar {
     width: 100%;
+    height: auto;        /* override height: 100% — prevents sidebar eating full column height */
+    flex-shrink: 1;      /* allow shrinking in column layout */
     border-right: none;
     border-bottom: 1px solid var(--border);
     padding: 12px 0 8px;
     overflow-x: auto;
     overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
   }
+
+  /* Let flex: 1 determine height; height: 100% conflicts in column layout */
+  .shell-main { height: auto; }
 
   /* Sidebar sections flow horizontally */
   .shell-sidebar > div {
@@ -421,8 +442,13 @@
     border-color: var(--accent);
   }
 
-  /* Budget input: compact */
-  .sidebar-budget-wrap { min-width: 120px; }
+  /* Sidebar controls: explicit widths for horizontal strip */
+  .sidebar-filter-select { width: 120px; min-width: 0; }
+  .sidebar-amount-input  { width: 64px;  flex: none; min-width: 0; }
+  .sidebar-budget-wrap   { min-width: 110px; }
+  .sidebar-budget-input  { width: 80px; }
+  .sidebar-sort-row      { flex-shrink: 0; }
+  .sidebar-checkbox      { flex-shrink: 0; }
 
   /* ── Bottom nav ──────────────────────────────────────────────── */
   .shell-bottom-nav {
@@ -431,7 +457,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom, 0));
     background: var(--surface);
     border-top: 1px solid var(--border);
     z-index: 100;

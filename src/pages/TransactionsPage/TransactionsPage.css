@@ -277,8 +277,26 @@
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .tx-page { padding: 16px; gap: 12px; }
-  .tx-header { flex-wrap: wrap; gap: 10px; }
+  .tx-header { flex-wrap: wrap; gap: 8px; }
+
+  /* Title row: own full-width line */
+  .tx-header-left { flex: 1 1 100%; }
+
+  /* Totals row: own full-width line, left-aligned */
+  .tx-totals {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 6px 0;
+    background: var(--surface);
+  }
+  .tx-totals-item { padding: 0 14px; }
+
+  /* Search: full width */
   .tx-search { flex: 1 1 100%; min-width: 0; }
+
   .tx-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .tx-table { min-width: 560px; }
   .tx-table td, .tx-table th { padding: 9px 12px; }

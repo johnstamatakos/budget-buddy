@@ -418,6 +418,8 @@
   .rm-header-left { order: 0; flex: 1 1 100%; }
   .rm-period-label { order: 1; }
   .rm-close       { order: 2; flex-shrink: 0; }
+  .rm-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .rm-table { min-width: 480px; }
   .rm-table td, .rm-table th { padding: 9px 12px; }
   .rm-source { max-width: 160px; }
   .rm-col-rec  { display: none; }

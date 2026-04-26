@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CATEGORIES, CATEGORY_COLORS } from '../constants/categories.js';
 
-const STORAGE_KEY = 'budget-buddy-custom-categories';
+const STORAGE_KEY = 'finch-custom-categories';
 
 // Extra colors cycled for user-created categories
 const CUSTOM_PALETTE = [
