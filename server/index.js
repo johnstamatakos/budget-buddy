@@ -286,8 +286,27 @@ app.get('/api/rules/suggestions', asyncHandler(async (_req, res) => {
     }
   }));
 
+  // Precompute collapsed forms for multi-word rule keys (used in prefix matching)
+  const collapsedRuleKeys = Object.fromEntries(
+    ruleKeys.filter((k) => k.includes(' ')).map((k) => [k, k.replace(/\s+/g, '')])
+  );
+
+  // Returns true if any existing rule would fire for this normalized key —
+  // replicates the exact matching logic from applyRules.
+  const matchedByExistingRule = (normKey) => {
+    const normCollapsed = normKey.replace(/\s+/g, '');
+    return ruleKeys.some((key) => {
+      const kc = collapsedRuleKeys[key];
+      return (
+        normKey === key ||
+        (normKey.startsWith(key) && (normKey[key.length] === ' ' || normKey[key.length] === '*')) ||
+        (kc && (normCollapsed === kc || normCollapsed.startsWith(kc)))
+      );
+    });
+  };
+
   const suggestions = Array.from(freq.entries())
-    .filter(([normKey, e]) => e.count >= 2 && !rules[normKey]) // skip keys that already have an exact rule
+    .filter(([normKey, e]) => e.count >= 2 && !matchedByExistingRule(normKey))
     .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, 20)
     .map(([normalizedKey, e]) => {
