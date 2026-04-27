@@ -30,6 +30,10 @@ export default function RulesPage() {
   const [suggestions, setSuggestions] = useState([]); // [{ ...fields, status: 'pending'|'approved'|'denied' }]
   const [applying, setApplying] = useState(false);
 
+  // Normalize merchants state
+  const [normalizeState, setNormalizeState] = useState('idle'); // idle | loading | done | error
+  const [normalizeResult, setNormalizeResult] = useState(null);
+
   const load = () =>
     fetch('/api/rules')
       .then((r) => r.json())
@@ -137,6 +141,24 @@ export default function RulesPage() {
 
   const closeRefine = () => { setRefineState('idle'); setSuggestions([]); setRefineSummary(''); };
 
+  // ── Normalize merchants ──────────────────────────────────────────────────────
+  const runNormalize = async () => {
+    setNormalizeState('loading');
+    setNormalizeResult(null);
+    try {
+      const res = await fetch('/api/admin/normalize-merchants', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Normalize failed.');
+      setNormalizeResult(data);
+      setNormalizeState('done');
+    } catch (err) {
+      setNormalizeResult({ error: err.message });
+      setNormalizeState('error');
+    }
+  };
+
+  const closeNormalize = () => { setNormalizeState('idle'); setNormalizeResult(null); };
+
   // ── Category dropdown: base list + any category already in use in rules ─────
   const dropdownCategories = useMemo(() => {
     const inRules = Object.values(rules).map((v) => (typeof v === 'string' ? v : v.category));
@@ -173,6 +195,14 @@ export default function RulesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <button
+          className="rules-normalize-btn"
+          onClick={normalizeState === 'idle' ? runNormalize : closeNormalize}
+          disabled={normalizeState === 'loading'}
+          title="Group similar merchant descriptions across all statements and standardize them to the most recent name and category"
+        >
+          {normalizeState === 'loading' ? '…' : normalizeState !== 'idle' ? '✕ Close' : '⟳ Normalize Merchants'}
+        </button>
         <button
           className="rules-refine-btn"
           onClick={refineState === 'idle' ? runRefine : closeRefine}
@@ -233,6 +263,52 @@ export default function RulesPage() {
                   </button>
                 </div>
               )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Normalize merchants panel ── */}
+      {normalizeState !== 'idle' && (
+        <div className="rules-normalize-panel">
+          {normalizeState === 'loading' && (
+            <p className="rules-normalize-status">Analyzing merchant names across all statements…</p>
+          )}
+          {normalizeState === 'error' && (
+            <p className="rules-normalize-status error">{normalizeResult?.error}</p>
+          )}
+          {normalizeState === 'done' && normalizeResult && (
+            <>
+              {normalizeResult.transactionsUpdated === 0 ? (
+                <p className="rules-normalize-status">All merchant names are already consistent — nothing to change.</p>
+              ) : (
+                <>
+                  <p className="rules-normalize-summary">
+                    Merged <strong>{normalizeResult.transactionsUpdated}</strong> transaction{normalizeResult.transactionsUpdated !== 1 ? 's' : ''} across{' '}
+                    <strong>{normalizeResult.clustersFound}</strong> merchant group{normalizeResult.clustersFound !== 1 ? 's' : ''}.
+                  </p>
+                  {normalizeResult.changes?.length > 0 && (
+                    <div className="rules-normalize-changes">
+                      {normalizeResult.changes.map((c, i) => (
+                        <div key={i} className="rules-normalize-cluster">
+                          <span className="rules-normalize-canonical">{c.canonical}</span>
+                          <span className="rules-normalize-cat">{c.canonicalCategory}</span>
+                          <div className="rules-normalize-aliases">
+                            {c.merged.map((m, j) => (
+                              <span key={j} className="rules-normalize-alias">
+                                {m.from}{m.fromCategory !== c.canonicalCategory ? ` (was: ${m.fromCategory})` : ''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="rules-normalize-actions">
+                <button className="rules-refine-close" onClick={closeNormalize}>Done</button>
+              </div>
             </>
           )}
         </div>

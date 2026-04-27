@@ -151,6 +151,7 @@ export async function applyRules(transactions) {
         category: rule.category,
         isRecurring: rule.isRecurring,
         ruleApplied: true,
+        confidence: 'high',
       };
     }
     return { ...t, ruleApplied: false };

@@ -22,7 +22,7 @@ function buildSystemPrompt(customCategories) {
     ? `\n\nCustom categories — use when transactions clearly match:\n${customCategories.map((c) => `- ${c}`).join('\n')}`
     : '';
 
-  return `You are a bank transaction categorizer. Given a JSON array of transactions (each with a source/merchant and optional bank activity type), return a JSON array with a category and isRecurring flag for each one — in the same order.
+  return `You are a bank transaction categorizer. Given a JSON array of transactions (each with a source/merchant and optional bank activity type), return a JSON array with a category, isRecurring flag, and confidence level for each one — in the same order.
 
 Valid categories: ${allCategories.join(', ')}
 
@@ -31,8 +31,13 @@ ${BASE_GUIDE}${customGuide}
 
 isRecurring: true for fixed-schedule charges — subscriptions, rent, loan payments, utilities, insurance, phone bills
 
+confidence: your certainty about the category assignment
+- "high" — merchant name clearly identifies the category (e.g. "Netflix" → Subscriptions, "Shell Gas" → Auto, "Whole Foods" → Groceries)
+- "medium" — reasonable inference from keywords or context (e.g. "MTG PMT" → Home, "LOAN PMT" → Student Loans, "AUTO INS" → Auto)
+- "low" — ambiguous, generic, or unclear description
+
 Return ONLY a valid JSON array — no markdown, no explanation. Include the i field from the input:
-[{"i":0,"category":"Restaurants","isRecurring":false},...]`;
+[{"i":0,"category":"Restaurants","isRecurring":false,"confidence":"high"},...]`;
 }
 
 const BATCH_SIZE = 80; // safe ceiling for Haiku's 4096-token output limit
@@ -51,6 +56,7 @@ export async function analyzeTransactions(transactions, customCategories = []) {
     ...t,
     category: categoryMap[i]?.category || 'Other',
     isRecurring: Boolean(categoryMap[i]?.isRecurring),
+    confidence: categoryMap[i]?.confidence || 'low',
   }));
 }
 

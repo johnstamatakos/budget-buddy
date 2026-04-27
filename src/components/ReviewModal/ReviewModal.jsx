@@ -25,10 +25,11 @@ export default function ReviewModal({
 }) {
   const multiMonth = initialGroups.length > 1;
 
-  // Per-group state: { txns, goodExpanded }
+  // Per-group state: { txns, verifyExpanded, goodExpanded }
   const [groupStates, setGroupStates] = useState(() =>
     initialGroups.map((g) => ({
       txns: g.transactions,
+      verifyExpanded: true,
       goodExpanded: false,
     }))
   );
@@ -77,9 +78,10 @@ export default function ReviewModal({
     setCutoffDate('');
   };
 
-  const { needsReview, looksGood } = useMemo(() => ({
-    needsReview: active.txns.filter((t) => !t.ruleApplied && !t.isDeposit),
-    looksGood:   active.txns.filter((t) =>  t.ruleApplied ||  t.isDeposit),
+  const { needsReview, quickVerify, looksGood } = useMemo(() => ({
+    needsReview: active.txns.filter((t) => !t.isDeposit && t.confidence === 'low'),
+    quickVerify: active.txns.filter((t) => !t.isDeposit && t.confidence === 'medium'),
+    looksGood:   active.txns.filter((t) =>  t.isDeposit || t.confidence === 'high'),
   }), [active.txns]);
 
   const activeTotalExpenses = active.txns
@@ -89,9 +91,9 @@ export default function ReviewModal({
   const handleSave = () =>
     onSave(groupStates.map((gs, i) => ({ ...initialGroups[i], transactions: gs.txns })));
 
-  // Count total "needs review" across all groups (for tab badges)
+  // Count low+medium confidence transactions across all groups (for tab badges)
   const reviewCounts = useMemo(() =>
-    groupStates.map((gs) => gs.txns.filter((t) => !t.ruleApplied && !t.isDeposit).length),
+    groupStates.map((gs) => gs.txns.filter((t) => !t.isDeposit && t.confidence !== 'high').length),
     [groupStates]
   );
 
@@ -165,7 +167,7 @@ export default function ReviewModal({
               </tr>
             </thead>
             <tbody>
-              {/* Needs Review */}
+              {/* Needs Review — low confidence, AI guessed */}
               {needsReview.length > 0 && (
                 <>
                   <tr className="rm-section-row review">
@@ -187,7 +189,33 @@ export default function ReviewModal({
                 </>
               )}
 
-              {/* Looks Good */}
+              {/* Quick Verify — medium confidence, AI inferred from keywords */}
+              {quickVerify.length > 0 && (
+                <>
+                  <tr
+                    className="rm-section-row verify clickable"
+                    onClick={() => setActiveProp('verifyExpanded', !active.verifyExpanded)}
+                  >
+                    <td colSpan={7}>
+                      <span className="rm-section-icon">◑</span>
+                      Quick Verify
+                      <span className="rm-section-badge">{quickVerify.length}</span>
+                      <span className="rm-section-chevron">{active.verifyExpanded ? '▴' : '▾'}</span>
+                    </td>
+                  </tr>
+                  {active.verifyExpanded && quickVerify.map((t) => (
+                    <TxRow
+                      key={t.id} t={t}
+                      onUpdate={updateTxn}
+                      onDelete={deleteTxn}
+                      allCategories={allCategories}
+                      onCreateCategory={onCreateCategory}
+                    />
+                  ))}
+                </>
+              )}
+
+              {/* Looks Good — rule matched or AI high-confidence */}
               {looksGood.length > 0 && (
                 <>
                   <tr

@@ -20,6 +20,20 @@ const COLOR_RECURRING = CHART_COLORS.recurring;
 const COLOR_ONETIME   = CHART_COLORS.onetime;
 const COLOR_DAILY     = CHART_COLORS.daily;
 
+// Bold jewel-tone palette for Treemap tiles — cycles by rank, not category
+const TREEMAP_PALETTE = [
+  '#2563eb', // cobalt blue
+  '#dc2626', // vivid red
+  '#059669', // emerald
+  '#7c3aed', // deep violet
+  '#d97706', // burnt amber
+  '#0891b2', // ocean cyan
+  '#be185d', // deep magenta
+  '#4f46e5', // rich indigo
+  '#c2410c', // burnt orange
+  '#0f766e', // dark teal
+];
+
 
 export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }) {
   const { getCategoryColor } = useCategories();
@@ -124,10 +138,10 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
     return Object.entries(totals)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 12)
-      .map(([name, value]) => {
+      .map(([name, value], idx) => {
         const catCounts = cats[name] || {};
         const category = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'Other';
-        return { name, value: parseFloat(value.toFixed(2)), category };
+        return { name, value: parseFloat(value.toFixed(2)), category, _idx: idx };
       });
   }, [txns]);
 
@@ -343,26 +357,34 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
           <h2>Spending by Category</h2>
           {categoryData.length > 0 ? (
             <>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    key={visiblePieData.map((d) => d.name).join(',')}
-                    data={visiblePieData}
-                    cx="50%" cy="50%"
-                    innerRadius={60} outerRadius={95}
-                    paddingAngle={3} dataKey="value"
-                    animationBegin={0} animationDuration={450}
-                  >
-                    {visiblePieData.map((entry) => (
-                      <Cell key={entry.name} fill={getCategoryColor(entry.name)} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v, name) => [formatCurrency(v), name]}
-                    contentStyle={TOOLTIP_STYLE}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <div style={{ position: 'relative' }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      key={visiblePieData.map((d) => d.name).join(',')}
+                      data={visiblePieData}
+                      cx="50%" cy="50%"
+                      innerRadius={60} outerRadius={95}
+                      paddingAngle={3} dataKey="value"
+                      animationBegin={0} animationDuration={450}
+                    >
+                      {visiblePieData.map((entry) => (
+                        <Cell key={entry.name} fill={getCategoryColor(entry.name)} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v, name) => [formatCurrency(v), name]}
+                      contentStyle={TOOLTIP_STYLE}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="dash-donut-center">
+                  <span className="dash-donut-pct" style={{ fontSize: '15px' }}>
+                    {formatCurrency(visiblePieData.reduce((s, d) => s + d.value, 0))}
+                  </span>
+                  <span className="dash-donut-label">total</span>
+                </div>
+              </div>
               <div className="dash-legend dash-legend-wrap">
                 {categoryData.map((item) => (
                   <span
@@ -418,12 +440,14 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
                   dataKey="value"
                   aspectRatio={4 / 3}
                   content={(props) => (
-                    <MerchantTile {...props} getCategoryColor={getCategoryColor} formatCurrency={formatCurrency} />
+                    <MerchantTile {...props} formatCurrency={formatCurrency} />
                   )}
                 >
                   <Tooltip
                     formatter={(v, _name, props) => [formatCurrency(v), props?.payload?.name || '']}
                     contentStyle={TOOLTIP_STYLE}
+                    labelStyle={{ color: '#f1f5f9', fontWeight: 600, marginBottom: 2 }}
+                    itemStyle={{ color: '#94a3b8' }}
                   />
                 </Treemap>
               </ResponsiveContainer>
@@ -551,9 +575,9 @@ export default function DashboardPage({ statements, selectedId, budgetGoal = 0 }
   );
 }
 
-function MerchantTile({ x, y, width, height, name, value, category, getCategoryColor, formatCurrency }) {
+function MerchantTile({ x, y, width, height, name, value, _idx, formatCurrency }) {
   if (!width || !height || width < 2 || height < 2) return null;
-  const fill = getCategoryColor(category || 'Other');
+  const fill = TREEMAP_PALETTE[(_idx ?? 0) % TREEMAP_PALETTE.length];
   const pad = 6;
   const label = name?.length > 18 ? name.slice(0, 18) + '…' : name;
   const showAmt  = height > 36 && width > 60;

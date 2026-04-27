@@ -35,6 +35,7 @@ export function normalizeTransactions(transactions) {
       category,
       isRecurring: Boolean(t.isRecurring),
       isDeposit,
+      confidence: t.confidence || 'low',
     };
   }).filter((t) => t.description.length > 0 || t.amount !== 0);
 }
